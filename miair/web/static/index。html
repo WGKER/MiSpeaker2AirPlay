@@ -1542,28 +1542,33 @@
 
                 // 开始轮询
                 qrPollTimer = setInterval(async ()=>{
-                    const pollResp = await fetch("/api/qr/poll");
-                    const pollData = await pollResp.json();
-                    if(pollData.code === 0) {
-                        // 扫码成功，回填userId/passToken输入框
-                        document.getElementById("input-userId").value = pollData.userId;
-                        document.getElementById("input-passToken").value = pollData.passToken;
-                        qrStatusText.textContent = "✅扫码成功！点击登录保存凭据";
-                        clearInterval(qrPollTimer);
-                        qrPollTimer = null;
-                        btnStartQr.disabled = false;
-                    } else if(pollData.code === 86002 || pollData.code ===86003) {
-                        qrStatusText.textContent = "二维码已过期，请重新点击生成";
-                        clearInterval(qrPollTimer);
-                        qrPollTimer = null;
-                        btnStartQr.disabled = false;
-                    } else if(pollData.code !== 86001) {
-                        qrStatusText.textContent = `错误：${pollData.msg || pollData.code}`;
-                        clearInterval(qrPollTimer);
-                        qrPollTimer = null;
-                        btnStartQr.disabled = false;
+                    try {
+                        const pollResp = await fetch("/api/qr/poll");
+                        const pollData = await pollResp.json();
+                        if(pollData.code === 0) {
+                            // 扫码成功，回填userId/passToken输入框
+                            document.getElementById("input-userId").value = pollData.userId;
+                            document.getElementById("input-passToken").value = pollData.passToken;
+                            qrStatusText.textContent = "✅扫码成功！点击登录保存凭据";
+                            qrArea.style.display = "none";
+                            clearInterval(qrPollTimer);
+                            qrPollTimer = null;
+                            btnStartQr.disabled = false;
+                        } else if(pollData.code === 86002) {
+                            qrStatusText.textContent = "二维码已过期，请重新点击生成";
+                            clearInterval(qrPollTimer);
+                            qrPollTimer = null;
+                            btnStartQr.disabled = false;
+                        } else if(pollData.code !== 86001) {
+                            qrStatusText.textContent = `错误：${pollData.msg || pollData.code}`;
+                            clearInterval(qrPollTimer);
+                            qrPollTimer = null;
+                            btnStartQr.disabled = false;
+                        }
+                        // code=86001：等待扫码，继续轮询
+                    } catch(err) {
+                        console.warn("轮询请求异常", err);
                     }
-                    // code=86001：等待扫码，继续轮询
                 }, 2000);
             } catch(err) {
                 qrStatusText.textContent = "生成二维码失败";
