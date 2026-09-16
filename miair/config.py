@@ -85,9 +85,6 @@ class Config:
     enable_voice_control: bool = False
     # 自动重启（当登录失败或服务异常时）
     auto_restart: bool = False
-    # ========== 在这里新增这一行 ==========
-    use_qr_login: bool = False
-    # =====================================
     voice_poll_interval: int = 1
     speakers: dict = field(default_factory=dict)
 
