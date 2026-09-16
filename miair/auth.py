@@ -14,6 +14,7 @@ from miair.config import Config
 log = logging.getLogger("miair")
 APP_UA = "APP/com.xiaomi.mihome APPV/60209 iosPassportSDK/3.9.0 iOS/17.5.1"
 
+
 def parse_cookie_string(cookie_str: str) -> dict:
     """解析 cookie 字符串，提取 userId 和 passToken"""
     result = {}
@@ -41,6 +42,13 @@ class AuthManager:
 
     async def _gen_qr_login(self):
         """生成米家扫码登录二维码（sid=xiaomiio）"""
+        # ========== 修复：缺少session初始化 ==========
+        if self.session is None or self.session.closed:
+            log.info("QR登录：session不存在或已关闭，新建aiohttp session")
+            self.session = aiohttp.ClientSession(
+                timeout=aiohttp.ClientTimeout(total=15, connect=5, sock_read=10)
+            )
+        # ============================================
         url = "https://account.xiaomi.com/longPolling/loginUrl"
         params = {"sid": "xiaomiio", "_json": "true"}
         headers = {"User-Agent": APP_UA}
@@ -116,7 +124,6 @@ class AuthManager:
             # 账号密码登录分支不变
             uid = None
             ptk = None
-
         # ---------------- 下面原有逻辑完全不变，不需要改动 ----------------
         if uid and ptk:
             self.account = MiAccount(
@@ -215,7 +222,6 @@ class AuthManager:
                     log.error(
                         "登录验证失败! 可能原因：密码错误、需要关闭二次验证、"
                         "或需要在 https://www.mi.com 完成人机验证。"
-                        "建议使用 cookie 方式登录。"
                     )
                 elif "userId" in err_msg:
                     log.error(
@@ -292,8 +298,8 @@ class AuthManager:
                 speaker.ensure_udn()
                 log.info(
                     f"已更新设备信息: {speaker.name} "
-                    f"(did={miot_did}, device_id={speaker.device_id}, "
-                    f"hardware={speaker.hardware})"
+                    "(did={miot_did}, device_id={speaker.device_id}, "
+                    "hardware={speaker.hardware})"
                 )
 
     def is_logged_in(self) -> bool:
